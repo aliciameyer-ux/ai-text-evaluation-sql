@@ -1,65 +1,91 @@
 # Analysing AI-Generated Text Quality
+
 ### A SQL-Based Language Evaluation System
 
 ## Project Overview
-This project models a system for evaluating the quality of AI-generated text. It simulates a pipeline where multiple language models (GPT-4, Claude, Llama) respond to the same set of prompts, and multiple evaluators score each response across several quality criteria (accuracy, fluency, coherence, relevance, clarity).
 
-The goal is to answer questions like:
-- Which model performs best overall, and in which task categories?
-- Where does each model struggle?
-- How much do human evaluators agree with each other?
-- How does model performance trend over time?
+This project models a relational database for evaluating the quality of AI-generated text. It simulates an evaluation workflow where multiple language models (GPT-4, Claude, and Llama) respond to the same set of prompts, and multiple evaluators score each response across several quality criteria including accuracy, fluency, coherence, relevance, and clarity.
 
-Built in PostgreSQL, using pgAdmin.
+The project explores questions such as:
+
+* Which model performs best overall and within different task categories?
+* Where does each model perform well, and where does it struggle?
+* How consistent are evaluators when scoring the same responses?
+* How does model performance change over time?
+
+Built in PostgreSQL using pgAdmin.
 
 ## Why This Project
-I have a background in English language teaching, so evaluating language quality, not just running numbers, is a natural fit. This project combines that background with SQL skills relevant to data analytics: relational database design, joins, data cleaning, validation, aggregation, subqueries, CTEs, window functions, and views.
+
+With a background in English language teaching, evaluating language quality felt like a natural problem to explore. Instead of analysing a traditional business dataset, I wanted to design a relational database around an AI text evaluation workflow while applying SQL skills such as database design, joins, data cleaning, validation, aggregation, subqueries, CTEs, window functions, and views.
 
 ## Database Schema
-Six normalized tables:
 
-| Table | Purpose |
-|---|---|
-| llm_models | The AI models being compared |
-| prompts | The input prompts, tagged by category and difficulty |
-| ai_responses | Generated text, linked to a prompt and a model |
-| evaluators | Who is scoring the responses |
-| evaluation_criteria | The dimensions being scored (accuracy, fluency, etc.) |
-| evaluations | The scores themselves, one row per evaluator/response/criterion |
+The database consists of six normalized tables:
 
-The core design decision: a response can be scored by many evaluators across many criteria, so scores live in their own table rather than as columns on ai_responses.
+| Table               | Purpose                                                               |
+| ------------------- | --------------------------------------------------------------------- |
+| llm_models          | The AI models being compared                                          |
+| prompts             | Input prompts, tagged by category and difficulty                      |
+| ai_responses        | Generated responses linked to a prompt and a model                    |
+| evaluators          | People scoring the responses                                          |
+| evaluation_criteria | Quality dimensions such as accuracy, fluency, and relevance           |
+| evaluations         | Individual scores given by evaluators for each response and criterion |
+
+One of the main design decisions was storing evaluation scores in a separate table. Since each response can be scored by multiple evaluators across multiple criteria, this structure avoids duplication and keeps the database normalized.
 
 ## Dataset Size
-- ~2,000 prompts across 5 categories (summarization, grammar explanation, translation, creative writing, coding)
-- ~6,000 AI responses (3 models x each prompt)
-- 10 evaluators
-- ~50,000 individual evaluation scores
 
-## Workflow
-1. Data Exploration — understand the shape of the dataset
-2. Data Cleaning — check for and remove duplicate prompts, standardize inconsistent category values, handle missing word counts
-3. Data Validation — confirm the data is clean and complete before analysis
-4. Joins — combine tables to answer real questions
-5. Aggregation — compare models and categories
-6. Subqueries — isolate above-average performers
-7. CTEs + CASE logic — classify responses into quality tiers
-8. Window Functions — rank models within categories, track performance over time
-9. Evaluator Consistency — measure agreement between evaluators using STDDEV
-10. View — package the core analysis into a reusable view for BI tools
+The dataset is synthetically generated to simulate a realistic AI evaluation workflow.
 
-## Files in This Repo
-- ai_text_evaluation_schema.sql — table definitions + realistic seed data
-- bulk_data_generator.sql — generates the large synthetic dataset
-- analysis_queries.sql — the full analysis workflow
+* Approximately 2,000 prompts across five categories (summarization, grammar explanation, translation, creative writing, and coding)
+* Approximately 6,000 AI responses (three models for each prompt)
+* 10 evaluators
+* Approximately 50,000 individual evaluation scores
+
+## SQL Analysis Workflow
+
+1. Explore the dataset and understand its structure
+2. Clean the data by removing duplicate prompts, standardizing category values, and handling missing word counts
+3. Validate the data before analysis
+4. Join tables to answer business questions
+5. Compare models and task categories using aggregation
+6. Use subqueries to identify above average performers
+7. Classify responses into quality tiers using CTEs and CASE statements
+8. Rank models and analyse performance trends with window functions
+9. Measure evaluator consistency using `STDDEV`
+10. Create a reusable view for reporting and future BI tools
+
+## Skills Demonstrated
+
+* Relational database design
+* PostgreSQL
+* Data cleaning and validation
+* Multi-table JOINs
+* Aggregate functions
+* Subqueries
+* Common Table Expressions (CTEs)
+* Window functions
+* Views
+* Time-based analysis
+
+## Files in This Repository
+
+* `ai_text_evaluation_schema.sql` - Database schema and sample seed data
+* `bulk_data_generator.sql` - Generates the synthetic evaluation dataset
+* `analysis_queries.sql` - SQL queries used throughout the project
 
 ## Key Finding
-GPT-4 had the highest overall average score, and led specifically in coding and grammar_explanation tasks. Claude performed best in creative_writing and summarization. Llama led in translation. This suggests model strength varies by task type rather than one model dominating across the board, which matters for choosing a model based on the actual use case rather than general reputation.
+
+Within this simulated dataset, GPT-4 achieved the highest average score overall, particularly in coding and grammar explanation tasks. Claude performed best in creative writing and summarization, while Llama achieved the highest scores in translation. The results demonstrate how the database can be used to compare model performance across different task types.
 
 ## A Note on the Data
-Removing duplicate prompts required deleting related evaluation and response records first, since Postgres blocks deletes that would leave other tables referencing a row that no longer exists (a foreign key constraint). Handling that cascading delete correctly is part of the data cleaning process documented in the analysis file.
 
-## How to Run This
-1. Create a PostgreSQL database
-2. Run ai_text_evaluation_schema.sql
-3. Run bulk_data_generator.sql
-4. Run analysis_queries.sql section by section
+One of the data cleaning challenges involved removing duplicate prompts. Because related responses and evaluations referenced those prompts through foreign keys, the dependent records had to be removed first before deleting the duplicates. This process helped maintain referential integrity and reflects a common challenge when working with relational databases.
+
+## How to Run This Project
+
+1. Create a PostgreSQL database.
+2. Run `ai_text_evaluation_schema.sql`.
+3. Run `bulk_data_generator.sql`.
+4. Run `analysis_queries.sql` section by section.
