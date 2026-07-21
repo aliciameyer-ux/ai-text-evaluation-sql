@@ -1,6 +1,7 @@
 -- ============================================
 -- AI-Generated Text Quality Analysis
 -- Author: Alicia Meyer
+-- Database: PostgreSQL
 -- ============================================
 
 -- ============================================
@@ -47,19 +48,18 @@ GROUP BY m.model_name;
 -- ============================================
 -- Checking for duplicate prompts. I want to make sure the same
 -- prompt wasn't accidentally loaded twice.
+
 SELECT prompt_text, COUNT(*) AS num_copies
 FROM prompts
 GROUP BY prompt_text
 HAVING COUNT(*) > 1
 ORDER BY num_copies DESC;
 
--- Removing the duplicates I found, keeping the earliest copy of
--- each one (lowest prompt_id). Some of these duplicate prompts
--- also had their own AI responses and evaluations generated for
--- them, so deleting the prompt straight away throws a foreign key
--- constraint error, Postgres blocks it to protect referential
--- integrity. The fix is to delete the child records first
--- (evaluations, then responses), and only then delete the prompt.
+-- Removing duplicate prompts while keeping the earliest copy
+-- (lowest prompt_id). Because related responses and evaluations
+-- reference these prompts through foreign keys, PostgreSQL won't
+-- allow the prompt to be deleted first. The child records must be
+-- removed before the duplicate prompt can be deleted.
 
 -- Step 1: delete evaluations tied to responses for duplicate prompts
 DELETE FROM evaluations
@@ -146,8 +146,9 @@ FROM ai_responses r
 LEFT JOIN evaluations e ON r.response_id = e.response_id
 WHERE e.evaluation_id IS NULL;
 
--- Any responses pointing to a prompt that no longer exists?
--- Worth checking since I deleted duplicate prompts in Section 2.
+-- Checking that every response still points to a valid prompt
+-- after removing duplicate prompts in Section 2.
+
 SELECT r.response_id
 FROM ai_responses r
 LEFT JOIN prompts p ON r.prompt_id = p.prompt_id
