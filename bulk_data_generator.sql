@@ -1,15 +1,17 @@
 -- =====================================================================
 -- BULK DATA GENERATOR
 -- Run this AFTER ai_text_evaluation_schema.sql (schema + seed data)
--- This adds thousands of synthetic rows so the database is big enough
--- to show off aggregate/window-function queries at scale.
+-- This adds thousands of synthetic rows so the database is large
+-- enough for realistic analysis using joins, aggregation,
+-- window functions, and views.
 --
 -- NOTE: This version deliberately injects some messy data (duplicate
 -- prompts, inconsistent casing, extra whitespace, missing values) so
 -- there is real work to do in the Data Cleaning section of
 -- analysis_queries.sql. In a real scraped/collected dataset this kind
 -- of mess happens naturally; here it's added on purpose so the
--- cleaning step is demonstrating a real skill, not a formality.
+-- cleaning step reflects the kind of issues that often appear in
+-- real-world datasets.
 -- =====================================================================
 
 
@@ -58,9 +60,8 @@ SELECT
     (ARRAY['easy', 'medium', 'hard'])[floor(random() * 3 + 1)]
 FROM generate_series(1, 2000) AS s(i);
 
--- Inject ~40 exact duplicate prompts (simulating an accidental double
--- import, which is exactly the kind of thing you caught in the
--- Superstore project with duplicate product IDs).
+-- Inject ~40 exact duplicate prompts to simulate an accidental
+-- double import, a common issue when combining or importing data.
 INSERT INTO prompts (prompt_text, category, difficulty_level)
 SELECT prompt_text, category, difficulty_level
 FROM prompts
@@ -91,7 +92,7 @@ SELECT
     floor(random() * 2000 + 300)::int
 FROM prompts p
 CROSS JOIN llm_models m
-WHERE p.prompt_id > 5;  -- skip the 5 original seed prompts, already have responses
+WHERE p.prompt_id > 5;  -- -- Skip the original seed prompts because they already have responses.
 
 
 -- ---------------------------------------------------------------------
