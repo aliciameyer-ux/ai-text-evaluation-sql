@@ -5,20 +5,23 @@
 -- =====================================================================
 -- DESIGN NOTE:
 -- The core relationship in this database is many-to-many:
---   one AI response gets scored by MULTIPLE evaluators
---   across MULTIPLE criteria (accuracy, fluency, coherence, etc.)
--- That's why "evaluations" is its own table rather than adding
--- score columns onto ai_responses. This is what lets you write
--- interesting SQL later (joins, GROUP BY, window functions) instead
--- of a single flat spreadsheet-style table.
+--   one AI response can be scored by MULTIPLE evaluators
+--   across MULTIPLE evaluation criteria (accuracy, fluency, coherence, etc.)
+-- That's why "evaluations" is stored as its own table rather than
+-- adding score columns to ai_responses. This design supports more
+-- flexible analysis using JOINs, aggregation, and window functions,
+-- while keeping the database normalized.
 -- =====================================================================
 
+
+-- =====================================================================
 
 -- =====================================================================
 -- 1. llm_models
 -- Which AI model produced the response. Kept separate so you can
 -- compare models against each other (e.g. GPT vs Claude vs Llama).
 -- =====================================================================
+
 CREATE TABLE llm_models (
     model_id      SERIAL PRIMARY KEY,
     model_name    VARCHAR(100) NOT NULL,
@@ -33,6 +36,7 @@ CREATE TABLE llm_models (
 -- The input given to the model. Category and difficulty let you
 -- later ask "which task type do models struggle with most?"
 -- =====================================================================
+
 CREATE TABLE prompts (
     prompt_id        SERIAL PRIMARY KEY,
     prompt_text      TEXT NOT NULL,
@@ -49,6 +53,7 @@ CREATE TABLE prompts (
 -- on the fly) because in a real system you'd capture them at
 -- generation time, not recompute them every query.
 -- =====================================================================
+
 CREATE TABLE ai_responses (
     response_id    SERIAL PRIMARY KEY,
     prompt_id      INT NOT NULL REFERENCES prompts(prompt_id),
@@ -66,6 +71,7 @@ CREATE TABLE ai_responses (
 -- from, say, an LLM-as-judge, so you could later compare human vs
 -- automated evaluation.
 -- =====================================================================
+
 CREATE TABLE evaluators (
     evaluator_id    SERIAL PRIMARY KEY,
     evaluator_name  VARCHAR(100) NOT NULL,
@@ -80,6 +86,7 @@ CREATE TABLE evaluators (
 -- columns) so you can add new criteria later without altering the
 -- table structure — this is the normalization payoff.
 -- =====================================================================
+
 CREATE TABLE evaluation_criteria (
     criteria_id    SERIAL PRIMARY KEY,
     criteria_name  VARCHAR(50) UNIQUE NOT NULL,  -- accuracy, fluency, coherence, relevance, creativity, safety
@@ -94,6 +101,7 @@ CREATE TABLE evaluation_criteria (
 -- The UNIQUE constraint stops the same evaluator scoring the same
 -- response/criterion twice by accident.
 -- =====================================================================
+
 CREATE TABLE evaluations (
     evaluation_id  SERIAL PRIMARY KEY,
     response_id    INT NOT NULL REFERENCES ai_responses(response_id),
@@ -163,7 +171,7 @@ INSERT INTO evaluations (response_id, evaluator_id, criteria_id, score, comments
 
 
 -- =====================================================================
--- EXAMPLE ANALYSIS QUERIES (for your portfolio write-up)
+-- EXAMPLE ANALYSIS QUERIES
 -- =====================================================================
 
 -- Average score per model, across all criteria
